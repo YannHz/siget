@@ -16,7 +16,7 @@ async function main() {
   });
   await connection.query(sql);
   await connection.end();
-  console.log("Base siase_control_acceso creada con usuarios locales admin/admin y alumno/admin.");
+  console.log("Base siget creada con usuarios locales admin/admin y alumno/admin.");
 }
 
 main().catch(error => { console.error(error.message); process.exitCode = 1; });
