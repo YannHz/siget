@@ -2,19 +2,17 @@ import { API_BASE } from './api';
 
 const API = `${API_BASE}/api`;
 
-// Función auxiliar para obtener el token de forma limpia
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("auth_token");
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
   };
 };
 
 export const obtenerAlumno = async (id: string) => {
   const response = await fetch(`${API}/alumnos/${id}`, {
     method: "GET",
-    headers: getAuthHeaders() // Se inyectan las cabeceras con el Token
+    headers: getAuthHeaders(),
+    credentials: 'include',
   });
   
   if (!response.ok) throw new Error(`Error al obtener alumno: ${response.status}`);
@@ -24,17 +22,32 @@ export const obtenerAlumno = async (id: string) => {
 export const obtenerInstructores = async () => {
   const response = await fetch(`${API}/instructores`, {
     method: "GET", 
-    headers: getAuthHeaders() // Se inyectan las cabeceras con el Token
+    headers: getAuthHeaders(),
+    credentials: 'include',
   });
   
   if (!response.ok) throw new Error(`Error al obtener instructores: ${response.status}`);
   return await response.json();
 };
 
-export const registrarDispositivo = async (data: any) => {
+export interface RegistroDispositivoPayload {
+  alumno_id: string | number;
+  instructor_id: string | number;
+  tipo: string;
+  marca: string;
+  modelo: string;
+  numero_serie?: string;
+  descripcion?: string;
+  observacion?: string;
+  estado?: number;
+  usuario_creacion?: string;
+}
+
+export const registrarDispositivo = async (data: RegistroDispositivoPayload) => {
   const response = await fetch(`${API}/registro-dispositivo`, {
     method: 'POST',
-    headers: getAuthHeaders(), // Centralizado maneja tanto el Content-Type como el Token
+    headers: getAuthHeaders(),
+    credentials: 'include',
     body: JSON.stringify(data)
   });
   

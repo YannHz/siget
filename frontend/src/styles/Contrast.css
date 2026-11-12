@@ -1,0 +1,37 @@
+/* Legibilidad sin alterar la atmósfera clara y translúcida de SIGET. */
+:root { --siget-muted: #4d6380; --siget-line: #b9cce0; }
+
+/* El contenido auxiliar ya no se diluye sobre las superficies claras. */
+.card-title { color: #465f7c !important; }
+.guardia-role, .card-subtitle, .card-footer, .equipo-label { color: #59728d !important; }
+.info-label { color: #315f9e !important; opacity: 1 !important; font-weight: 800 !important; }
+.info-item > span:last-child, .equipo-value, .equipo-desc-text { color: #1a2f4b !important; font-weight: 600 !important; }
+
+/* Tarjetas operativas: borde y texto claros sin convertirlas en bloques opacos. */
+.alumno-card { border-color: rgba(105,151,184,.66) !important; }
+.alumno-card .alumno-name { color: #173e7c !important; }
+.alumno-card .card-subtitle, .alumno-card .card-footer { color: #536e8b !important; }
+.alumno-card.finalized { opacity: .84 !important; filter: none !important; }
+.badge-id { color: #3c5b79 !important; background: rgba(220,233,243,.94) !important; }
+.badge-status.salida { color: #a6373f !important; background: #fff0f1 !important; }
+
+.value-box, .serie-mono { border-color: #bfd1e0 !important; color: #1c314c !important; }
+.ultimo-registro { color: #415e7c !important; border-color: #c4d5e4 !important; font-weight: 650 !important; }
+.scan-guidance { color: #315f8d !important; font-weight: 650 !important; }
+.search-input::placeholder { color: #607995 !important; opacity: 1; }
+.reports-card p, .report-metrics span, .summary-list span { color: #4f6a86 !important; }
+
+/* Estados vacíos: siguen siendo tranquilos, pero deben poder leerse de inmediato. */
+.empty-detalles { color: #4f6d8d !important; font-weight: 800 !important; opacity: 1 !important; }
+.estado-empty { color: #3f6287 !important; font-weight: 650 !important; opacity: 1 !important; }
+.empty-state { opacity: 1 !important; }
+.empty-state .empty-text { color: #536e89 !important; font-weight: 650 !important; }
+.empty-state .empty-icon { color: #2b8ca7 !important; opacity: 1 !important; }
+
+/* Respeta las preferencias de accesibilidad sin eliminar la transparencia de forma normal. */
+@media (prefers-contrast: more) {
+  .card-panel, .alumno-card, .navegacion-superior, .scanner-shell, .reports-card, .reports-header {
+    border-color: #6f91b0 !important;
+    backdrop-filter: none !important;
+  }
+}

@@ -4,7 +4,7 @@ const alumnosController = require("../controllers/alumnos.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 
 // Aplicar el middleware a todas las rutas de alumnos para protegerlas
-router.use(authMiddleware.verifyToken);
+router.use(authMiddleware.requireAuth);
 
 router.get("/", alumnosController.getAlumnos);
 router.get("/:id", alumnosController.obtenerAlumnoFormateadoPorId);

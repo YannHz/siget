@@ -1,7 +1,7 @@
 /**
  * Middleware de autorización por rol.
  * Uso: verifyRole("vigilante", "admin")
- * Debe usarse DESPUÉS de verifyToken.
+ * Debe usarse DESPUÉS de requireAuth.
  */
 exports.verifyRole = (...allowedRoles) => {
   return (req, res, next) => {

@@ -22,23 +22,10 @@ class VigilanteService {
         nuevoEstado,
       );
 
-      if (nuevoEstado === 2) {
-        await vigilanteRepo.registrarEntradaAsistencia(
-          connection,
-          registro.alumno_id,
-          vigilanteId,
-        );
-      } else if (nuevoEstado === 3) {
-        await vigilanteRepo.registrarSalidaAsistencia(
-          connection,
-          registro.alumno_id,
-        );
-      }
-
       await connection.commit();
       return {
         exito: true,
-        mensaje: "Estado y asistencia actualizados correctamente",
+        mensaje: "Estado del registro actualizado correctamente",
       };
     } catch (error) {
       await connection.rollback();

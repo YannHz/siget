@@ -1,17 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import Login from "./pages/Login";
 import DashboardVigilante from "./pages/DashboardVigilante";
 import DashboardAlumno from "./pages/DashboardAlumno";
-import QRVigilante from "./pages/QRVigilante";
-import QRAlumno from "./pages/QRAlumno";
-import AsistenciaAlumno from "./pages/AsistenciaAlumno";
-import ListaEstudiantes from "./pages/ListaEstudiantes";
+import EscanerVigilante from "./pages/EscanerVigilante";
+import ReportesVigilante from "./pages/ReportesVigilante";
 import ProtectedRoute from "./components/ProtectedRoute";
-import EscanerAlumno from "./pages/EscanerAlumno";
+import "./styles/Contrast.css";
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors closeButton toastOptions={{ style: { borderRadius: '16px' } }} />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
@@ -25,14 +25,14 @@ function App() {
           }
         />
         <Route
-          path="/dashboard-vigilante/qr-vigilante"
+          path="/dashboard-vigilante/escanear"
           element={
             <ProtectedRoute requiredRole="vigilante">
-              <QRVigilante />
+              <EscanerVigilante />
             </ProtectedRoute>
           }
         />
-
+        <Route path="/dashboard-vigilante/reportes" element={<ProtectedRoute requiredRole="vigilante"><ReportesVigilante /></ProtectedRoute>} />
         <Route
           path="/dashboard-alumno"
           element={
@@ -42,41 +42,6 @@ function App() {
           }
         />
         
-        <Route
-          path="/qr-alumno"
-          element={
-            <ProtectedRoute requiredRole="alumno">
-              <QRAlumno />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/escaner-alumno"
-          element={
-            <ProtectedRoute requiredRole="alumno">
-              <EscanerAlumno />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/asistencia-alumno"
-          element={
-            <ProtectedRoute requiredRole="alumno">
-              <AsistenciaAlumno />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ListaEstudiantes"
-          element={
-            <ProtectedRoute requiredRole="vigilante">
-              <ListaEstudiantes />
-            </ProtectedRoute>
-          }
-        />
-
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

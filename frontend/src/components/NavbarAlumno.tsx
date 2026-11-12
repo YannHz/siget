@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import senatiVigilante from '../assets/SenatiVigilante.png';
 import '../styles/Navbar.css';
 
@@ -9,27 +9,19 @@ const NavbarAlumno = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth_token');
-    navigate('/login');
-  };
-
   const navItems = [
     { title: 'Dashboard', path: '/dashboard-alumno' },
-    { title: 'Escáner QR', path: '/escaner-alumno' },
-    { title: 'Asistencia', path: '/asistencia-alumno' },
   ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <>
-      <nav className="global-navbar">
+      <nav className="siget-navbar">
         <div className="navbar-container">
           <div className="navbar-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard-alumno')}>
             <img src={senatiVigilante} alt="SENATI" className="logo" />
-            <span className="titulo">SIASE</span>
+            <span className="titulo">SIGET</span>
           </div>
 
           {/* Menú desktop */}
@@ -47,10 +39,6 @@ const NavbarAlumno = () => {
               ))}
             </div>
 
-            <button className="navbar-logout logout-btn" onClick={handleLogout} title="Cerrar sesión">
-              <LogOut size={20} className="logout-icon" />
-              <span>Salir</span>
-            </button>
           </div>
 
           {/* Botón hamburguesa (solo móvil) */}
@@ -82,10 +70,6 @@ const NavbarAlumno = () => {
             {item.title}
           </span>
         ))}
-        <button className="mobile-logout-btn logout-btn" onClick={handleLogout}>
-          <LogOut size={20} />
-          <span>Salir</span>
-        </button>
       </div>
     </>
   );

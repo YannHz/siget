@@ -93,3 +93,6 @@
 .registro-estado.espera {
   color: #D97706; /* Amber-600 */
 }
+
+.estado-panel { border: 1px solid rgba(255,255,255,.86) !important; border-radius: 24px !important; background: rgba(222,235,246,.74) !important; box-shadow: 0 14px 34px rgba(18,58,139,.09), inset 0 1px 0 rgba(255,255,255,.9) !important; backdrop-filter: blur(20px) saturate(1.1); }.action-buttons { gap: 14px; }.btn-action { width: 144px; height: 50px; border-radius: 999px; }.btn-action:disabled { background: #d7e3ed; color: #58718b; opacity: 1; }.btn-entrada { background: var(--siget-cyan); border: 0; color: #042a35; }.btn-salida { background: var(--siget-deep); border: 0; }
+.estado-empty { margin: 0; color: #536e89; font-size: 14px; text-align: center; }.scan-guidance { display: flex; max-width: 320px; align-items: flex-start; gap: 9px; margin-top: 22px; color: #365f8c; font-size: 13px; font-weight: 600; line-height: 1.45; text-align: left; }

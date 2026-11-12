@@ -18,7 +18,7 @@ const RegistroForm = () => {
         semestre: ''
     })
 
-    const [instructores, setInstructores] = useState<any[]>([])
+    const [instructores, setInstructores] = useState<Array<{ id: number; nombre_completo: string }>>([])
 
     const [formData, setFormData] = useState({
         alumno_id: '',
@@ -242,7 +242,7 @@ const RegistroForm = () => {
                             </option>
 
                             {
-                                instructores.map((inst: any) => (
+                                instructores.map((inst) => (
                                     <option
                                         key={inst.id}
                                         value={inst.id}

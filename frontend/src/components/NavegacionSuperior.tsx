@@ -1,8 +1,8 @@
-import { Search, User } from 'lucide-react'
+import { BarChart3, ScanLine, Search, User } from 'lucide-react'
 import '../styles/NavegacionSuperior.css'
 import type { Guardia } from '../types'
 
-export default function NavegacionSuperior({ guardia, onSearch }: { guardia: Guardia | null, onSearch: (term: string) => void }) {
+export default function NavegacionSuperior({ guardia, onSearch, onScan, onReports }: { guardia: Guardia | null, onSearch: (term: string) => void, onScan: () => void, onReports: () => void }) {
   return (
     <div className="navegacion-superior">
       <div className="guardia-info">
@@ -17,6 +17,11 @@ export default function NavegacionSuperior({ guardia, onSearch }: { guardia: Gua
       </div>
       
       <div className="nav-actions">
+        <button className="reports-trigger" onClick={onReports} title="Ver reportes"><BarChart3 size={18} /> <span>Reportes</span></button>
+        <button className="scan-trigger" onClick={onScan}>
+          <ScanLine size={18} />
+          Escanear QR
+        </button>
         <div className="search-container">
           <input 
             type="text" 

@@ -1,17 +1,12 @@
-const jwt = require("jsonwebtoken");
+const sessionService = require("../services/session.service");
 
-exports.verifyToken = (req, res, next) => {
-  const token = req.cookies.auth_token || req.headers['authorization']?.split(' ')[1];
+exports.requireAuth = async (req, res, next) => {
+  const usuario = await sessionService.obtenerSesion(req.cookies.siase_session);
 
-  if (!token) {
-    return res.status(403).json({ success: false, error: "No se proporcionó un token de autenticación" });
+  if (!usuario) {
+    return res.status(401).json({ success: false, error: "Sesión no válida o expirada" });
   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ success: false, error: "Token inválido o expirado" });
-  }
+  req.user = usuario;
+  next();
 };

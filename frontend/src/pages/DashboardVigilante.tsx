@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/App.css';
 import BarraLateral from '../components/BarraLateral';
 import NavegacionSuperior from '../components/NavegacionSuperior';
-import Navbar from '../components/Navbar';
 import ResultadosBusqueda from '../components/ResultadosBusqueda';
 import DetallesItem from '../components/DetallesItem';
 import EstadoEntrada from '../components/EstadoEntrada';
 import { API_BASE } from '../services/api';
+import type { Alumno } from '../types';
 
 // Ajustamos la interfaz para que sea más flexible y compatible
 interface AlumnoRegistro {
@@ -29,6 +30,7 @@ interface AlumnoRegistro {
 }
 
 function DashboardVigilante() {
+  const navigate = useNavigate();
   const [alumnos, setAlumnos] = useState<AlumnoRegistro[]>([]);
   const [allAlumnos, setAllAlumnos] = useState<AlumnoRegistro[]>([]);
   const [selectedAlumno, setSelectedAlumno] = useState<AlumnoRegistro | null>(null);
@@ -36,18 +38,16 @@ function DashboardVigilante() {
 
   // 1. Carga de los registros de dispositivos con Token
   const fetchRegistros = () => {
-    const token = localStorage.getItem("auth_token");
-
     fetch(`${API_BASE}/api/registro_dispositivo`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      }
+      },
+      credentials: "include"
     })
       .then(res => res.json())
       .then(data => {
-        const mapped = data.map((r: any) => ({
+        const mapped = data.map((r: AlumnoRegistro) => ({
           ...r,
           id: r.id,
           alumno_id: r.alumno_id,
@@ -58,13 +58,13 @@ function DashboardVigilante() {
         }));
         setAllAlumnos(mapped);
         setAlumnos(mapped);
+        setSelectedAlumno(previous => previous ? mapped.find((item: AlumnoRegistro) => item.id === previous.id) ?? null : null);
       })
       .catch(err => console.error("Error al cargar registros:", err));
   };
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
-    const token = localStorage.getItem("auth_token");
 
     if (userStr) {
       const user = JSON.parse(userStr);
@@ -75,8 +75,8 @@ function DashboardVigilante() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
+        },
+        credentials: "include"
       })
         .then(res => res.json())
         .then(data => {
@@ -93,6 +93,8 @@ function DashboardVigilante() {
     }
 
     fetchRegistros();
+    const refresh = window.setInterval(fetchRegistros, 4000);
+    return () => window.clearInterval(refresh);
   }, []);
 
   const handleSearch = (searchTerm: string) => {
@@ -109,22 +111,21 @@ function DashboardVigilante() {
   };
 
   // 3. Selección y carga asíncrona de datos extendidos del alumno con Token
-  const handleSelectRegistro = (registro: any) => {
+  const handleSelectRegistro = (registro: Alumno) => {
+    const registroSeleccionado = registro as AlumnoRegistro;
     setSelectedAlumno({
-      ...registro,
-      nombre: registro.alumno?.split(' ')[0] || '',
-      apellido: registro.alumno?.split(' ').slice(1).join(' ') || '',
+      ...registroSeleccionado,
+      nombre: registroSeleccionado.alumno?.split(' ')[0] || '',
+      apellido: registroSeleccionado.alumno?.split(' ').slice(1).join(' ') || '',
     });
 
-    if (registro.alumno_id) {
-      const token = localStorage.getItem("auth_token");
-
-      fetch(`${API_BASE}/api/alumnos/${registro.alumno_id}`, {
+    if (registroSeleccionado.alumno_id) {
+      fetch(`${API_BASE}/api/alumnos/${registroSeleccionado.alumno_id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
+        },
+        credentials: "include"
       })
         .then(res => res.json())
         .then(alumnoData => {
@@ -136,9 +137,9 @@ function DashboardVigilante() {
               semestre: alumnoData.semestre,
               idsenati: alumnoData.idsenati,
               instructor: alumnoData.instructor,
-              tipo: registro.objeto?.split(' ')[0] || 'Dispositivo',
-              marca: registro.objeto?.split(' ')[1] || 'N/A',
-              modelo: registro.objeto?.split(' ').slice(2).join(' ') || 'N/A',
+              tipo: registroSeleccionado.objeto?.split(' ')[0] || 'Dispositivo',
+              marca: registroSeleccionado.objeto?.split(' ')[1] || 'N/A',
+              modelo: registroSeleccionado.objeto?.split(' ').slice(2).join(' ') || 'N/A',
             };
           });
         })
@@ -147,13 +148,12 @@ function DashboardVigilante() {
   };
 
   return (
-    <div className="layout-wrapper">
-      <Navbar />
+    <div className="layout-wrapper vigilante-shell">
       <div className="app-container">
         <BarraLateral alumno={selectedAlumno} />
 
         <div className="main-content">
-          <NavegacionSuperior guardia={guardia} onSearch={handleSearch} />
+          <NavegacionSuperior guardia={guardia} onSearch={handleSearch} onScan={() => navigate('/dashboard-vigilante/escanear')} onReports={() => navigate('/dashboard-vigilante/reportes')} />
 
           <div className="content-area">
             <ResultadosBusqueda
@@ -165,8 +165,6 @@ function DashboardVigilante() {
               <DetallesItem alumno={selectedAlumno} />
               <EstadoEntrada 
                 alumno={selectedAlumno} 
-                guardiaId={guardia.id}
-                onRefresh={fetchRegistros}
               />
             </div>
           </div>

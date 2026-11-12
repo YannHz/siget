@@ -34,17 +34,23 @@ class RegistroDispositivoRepository {
     }
 
     async obtenerDispositivosPorAlumno(alumnoId) {
+        // Los dispositivos creados antes del QR estático reciben uno una sola vez.
+        await db.promise().query(
+            "UPDATE dispositivos_x_alumno SET codigo_qr = UUID() WHERE alumno_id = ? AND (codigo_qr IS NULL OR codigo_qr = '')",
+            [alumnoId],
+        );
         const query = `
             SELECT
                 d.id,
                 d.tipo,
                 d.marca,
                 d.modelo,
+                d.codigo_qr,
                 d.numero_serie,
                 d.descripcion,
                 d.estado
             FROM dispositivos_x_alumno d
-            WHERE d.alumno_id = ?
+            WHERE d.alumno_id = ? AND d.estado = 1
             ORDER BY d.fecha_creacion DESC
         `;
         const [rows] = await db.promise().query(query, [alumnoId]);
@@ -84,10 +90,11 @@ class RegistroDispositivoRepository {
                 modelo,
                 numero_serie,
                 descripcion,
+                codigo_qr,
                 estado,
                 usuario_creacion
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
@@ -97,6 +104,7 @@ class RegistroDispositivoRepository {
             data.modelo,
             data.numero_serie,
             data.descripcion,
+            data.codigo_qr,
             1,
             "sistema",
         ];
@@ -118,7 +126,7 @@ class RegistroDispositivoRepository {
                 objeto_id,
                 usuario_creacion
             )
-            VALUES (?, '1000-01-01', '1000-01-01', ?, ?, ?, ?, ?)
+            VALUES (?, NULL, NULL, ?, ?, ?, ?, ?)
         `;
 
         const values = [
@@ -135,8 +143,8 @@ class RegistroDispositivoRepository {
         return result.insertId;
     }
 
-    async crearSolicitudIngreso(alumnoId, dispositivoId, instructorId) {
-        // estado 0 = en_espera, guardia_id=1 como placeholder (se asigna después)
+    async crearSolicitudIngreso(alumnoId, dispositivoId) {
+        // La tabla histórica exige instructor y guardia. El vigilante real se asigna al escanear.
         const query = `
             INSERT INTO registro_dispositivo (
                 estado,
@@ -148,15 +156,49 @@ class RegistroDispositivoRepository {
                 objeto_id,
                 usuario_creacion
             )
-            VALUES (0, '1000-01-01', '1000-01-01', ?, ?, 1, ?, 'alumno')
+            VALUES (0, NULL, NULL, ?, (SELECT id FROM instructor ORDER BY id LIMIT 1), 1, ?, 'alumno')
         `;
-        const [result] = await db.promise().query(query, [alumnoId, instructorId, dispositivoId]);
+        const [result] = await db.promise().query(query, [alumnoId, dispositivoId]);
         return result.insertId;
+    }
+
+    async dispositivoPerteneceAAlumno(dispositivoId, alumnoId) {
+        const [rows] = await db.promise().query(
+            "SELECT 1 FROM dispositivos_x_alumno WHERE id = ? AND alumno_id = ? LIMIT 1",
+            [dispositivoId, alumnoId],
+        );
+        return Boolean(rows[0]);
+    }
+
+    async tieneSolicitudActiva(dispositivoId) {
+        const [rows] = await db.promise().query(
+            "SELECT 1 FROM registro_dispositivo WHERE objeto_id = ? AND estado IN (0, 1) LIMIT 1",
+            [dispositivoId],
+        );
+        return Boolean(rows[0]);
+    }
+
+    async actualizarDispositivo(dispositivoId, alumnoId, data) {
+        const [result] = await db.promise().query(
+            `UPDATE dispositivos_x_alumno
+             SET tipo = ?, marca = ?, modelo = ?, numero_serie = ?, descripcion = ?
+             WHERE id = ? AND alumno_id = ? AND estado = 1`,
+            [data.tipo, data.marca, data.modelo, data.numero_serie || null, data.descripcion || null, dispositivoId, alumnoId],
+        );
+        return result.affectedRows > 0;
+    }
+
+    async desactivarDispositivo(dispositivoId, alumnoId) {
+        const [result] = await db.promise().query(
+            "UPDATE dispositivos_x_alumno SET estado = 0 WHERE id = ? AND alumno_id = ? AND estado = 1",
+            [dispositivoId, alumnoId],
+        );
+        return result.affectedRows > 0;
     }
     async marcarEntrada(registroId, guardiaId) {
         const query = `
             UPDATE registro_dispositivo 
-            SET estado = 1, fecha_entrada = CURDATE(), guardia_id = ?
+            SET estado = 1, fecha_entrada = NOW(), guardia_id = ?
             WHERE id = ?
         `;
         const [result] = await db.promise().query(query, [guardiaId, registroId]);
@@ -166,11 +208,45 @@ class RegistroDispositivoRepository {
     async marcarSalida(registroId) {
         const query = `
             UPDATE registro_dispositivo 
-            SET estado = 2, fecha_salida = CURDATE()
-            WHERE id = ?
+            SET estado = 2, fecha_salida = NOW()
+            WHERE id = ? AND estado = 1
         `;
         const [result] = await db.promise().query(query, [registroId]);
         return result.affectedRows > 0;
+    }
+
+    async procesarEscaneoQr(codigoQr, guardiaId) {
+        const connection = await db.promise().getConnection();
+        try {
+            await connection.beginTransaction();
+            const [rows] = await connection.query(
+                `SELECT r.id, r.estado
+                 FROM registro_dispositivo r
+                 JOIN dispositivos_x_alumno d ON d.id = r.objeto_id
+                 WHERE d.codigo_qr = ? AND r.estado IN (0, 1)
+                 ORDER BY r.id DESC
+                 LIMIT 1 FOR UPDATE`,
+                [codigoQr],
+            );
+            if (!rows[0]) throw new Error("No hay una solicitud activa para este dispositivo");
+
+            const registro = rows[0];
+            const nuevoEstado = registro.estado === 0 ? 1 : 2;
+            const campoFecha = nuevoEstado === 1 ? "fecha_entrada" : "fecha_salida";
+            await connection.query(
+                `UPDATE registro_dispositivo
+                 SET estado = ?, guardia_id = ?, ${campoFecha} = NOW()
+                 WHERE id = ?`,
+                [nuevoEstado, guardiaId, registro.id],
+            );
+            await connection.commit();
+            return { registroId: registro.id, accion: nuevoEstado === 1 ? "INGRESO" : "SALIDA", estado: nuevoEstado };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

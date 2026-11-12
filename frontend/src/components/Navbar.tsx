@@ -11,25 +11,23 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    localStorage.removeItem("auth_token");
+    fetch('/login/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined);
     navigate("/login");
   };
 
   const navItems = [
     { title: 'Dashboard', path: '/dashboard-vigilante' },
-    { title: 'QR guardia', path: '/dashboard-vigilante/qr-vigilante' },
-    { title: 'Asistencia', path: '/ListaEstudiantes' }
   ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <>
-      <nav className="global-navbar">
+      <nav className="siget-navbar">
         <div className="navbar-container">
           <Link to="/dashboard-vigilante" className="navbar-logo">
             <img src={senatiVigilante} alt="SENATI" className="logo"/>
-            <span className="titulo">SIASE</span>
+            <span className="titulo">SIGET</span>
           </Link>
 
           <div className="navbar-menu">

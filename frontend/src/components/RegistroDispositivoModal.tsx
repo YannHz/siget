@@ -1,60 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Laptop } from 'lucide-react';
 import { API_BASE } from '../services/api';
-
-interface Instructor {
-  id: number;
-  nombre_completo: string;
-}
+import { toast } from 'sonner';
 
 interface Props {
   alumnoId: number;
-  instructorIdDefault?: number;
+  dispositivo?: { id: number; tipo: string; marca: string; modelo: string; numero_serie?: string; descripcion?: string } | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function RegistroDispositivoModal({
   alumnoId,
-  instructorIdDefault,
+  dispositivo = null,
   onClose,
   onSuccess,
 }: Props) {
-  const [instructores, setInstructores] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    instructor_id: instructorIdDefault?.toString() ?? '',
-    tipo: '',
-    marca: '',
-    modelo: '',
-    numero_serie: '',
-    descripcion: '',
+    tipo: dispositivo?.tipo ?? '',
+    marca: dispositivo?.marca ?? '',
+    modelo: dispositivo?.modelo ?? '',
+    numero_serie: dispositivo?.numero_serie ?? '',
+    descripcion: dispositivo?.descripcion ?? '',
     observacion: '',
   });
-
-  useEffect(() => {
-    // 1. Recuperamos el token para autorizar la carga de instructores
-    const token = localStorage.getItem("auth_token");
-
-    fetch(`${API_BASE}/api/instructor`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // Encabezado de seguridad añadido
-      }
-    })
-      .then(r => {
-        if (!r.ok) {
-          throw new Error(`Error en el servidor: ${r.status}`);
-        }
-        return r.json();
-      })
-      .then(setInstructores)
-      .catch(error => {
-        console.error("Error al cargar los instructores:", error);
-      });
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,30 +36,20 @@ export default function RegistroDispositivoModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.tipo || !formData.marca || !formData.modelo) {
-      alert('Completa los campos obligatorios: Tipo, Marca y Modelo.');
+      toast.error('Completa tipo, marca y modelo.');
       return;
     }
-    if (!formData.instructor_id) {
-      alert('Selecciona un instructor.');
-      return;
-    }
-
     setLoading(true);
 
-    // 2. Recuperamos el token para autorizar la inserción del dispositivo
-    const token = localStorage.getItem("auth_token");
-
     try {
-      const response = await fetch(`${API_BASE}/api/registro_dispositivo`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE}/api/registro_dispositivo${dispositivo ? `/dispositivo/${dispositivo.id}` : ''}`, {
+        method: dispositivo ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Encabezado de seguridad añadido
         },
+        credentials: 'include',
         body: JSON.stringify({
-          alumno_id: alumnoId,
-          instructor_id: Number(formData.instructor_id),
-          guardia_id: 1, // placeholder, se asigna en flujo de ingreso
+          ...(!dispositivo && { alumno_id: alumnoId }),
           tipo: formData.tipo,
           marca: formData.marca,
           modelo: formData.modelo,
@@ -100,12 +61,13 @@ export default function RegistroDispositivoModal({
 
       const data = await response.json();
       if (response.ok) {
+        toast.success(dispositivo ? 'Equipo actualizado.' : 'Equipo registrado. Ya puedes crear su solicitud de ingreso.');
         onSuccess();
       } else {
-        alert(data.error || 'Error al registrar dispositivo');
+        toast.error(data.error || 'No se pudo registrar el dispositivo.');
       }
     } catch {
-      alert('Error de conexión al registrar el dispositivo');
+      toast.error('No se pudo conectar al registrar el dispositivo.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +80,7 @@ export default function RegistroDispositivoModal({
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Laptop size={22} color="var(--color-nav-bg)" />
-            <h2 className="modal-title">Registro de Dispositivo</h2>
+            <h2 className="modal-title">{dispositivo ? 'Editar dispositivo' : 'Registro de dispositivo'}</h2>
           </div>
           <button className="modal-close-btn" onClick={onClose} title="Cerrar">
             <X size={22} />
@@ -194,23 +156,6 @@ export default function RegistroDispositivoModal({
               />
             </div>
 
-            <div className="modal-form-group full-width">
-              <label className="modal-label">Instructor *</label>
-              <select
-                className="modal-select"
-                name="instructor_id"
-                value={formData.instructor_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Seleccione un instructor</option>
-                {instructores.map(inst => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.nombre_completo}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div className="modal-footer">
@@ -218,7 +163,7 @@ export default function RegistroDispositivoModal({
               Cancelar
             </button>
             <button type="submit" className="btn-modal-submit" disabled={loading}>
-              {loading ? 'Registrando…' : 'Registrar Dispositivo'}
+              {loading ? 'Guardando…' : dispositivo ? 'Guardar cambios' : 'Registrar dispositivo'}
             </button>
           </div>
         </form>
